@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f7f8fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100%;
+        }
+
+        .sidebar h3 {
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar ul li a {
+            color: #c2c7d0;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .sidebar ul li a:hover {
+            color: white;
+        }
+
+        /* Main content */
+        .content {
+            margin-left: 250px;
+            padding: 40px;
+            width: 100%;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        form .form-control {
+            height: 45px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: #f7f7f7;
+            margin-bottom: 15px;
+        }
+
+        form .form-control:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 8px rgba(108, 92, 231, 0.2);
+        }
+
+        .btn-primary {
+            background-color: #6c5ce7;
+            color: white;
+            width: 100%;
+            height: 45px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: #4834d4;
+        }
+
+        .alert-success {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Settings</h3>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/setting">Settings</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <div class="container">
+                <div class="card">
+                    <h2>Connect Your IndiaMart Account</h2>
+                    <p>Enter your IndiaMart credentials to connect your account:</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+
+                        <button type="submit" class="btn-primary">Connect</button>
+                    </form>
+
+                    {% if indiamart_account %}
+                        <div class="alert alert-success" role="alert">
+                            You have successfully connected your IndiaMart account!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <h2>Connect Your IndiaMart Account</h2>
+        <p>Enter your IndiaMart credentials to connect your account:</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <button type="submit" class="btn btn-primary">Connect</button>
+        </form>
+
+        {% if indiamart_account %}
+            <div class="alert alert-success mt-4" role="alert">
+                You have successfully connected your IndiaMart account!
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    
+</body>
+</html>

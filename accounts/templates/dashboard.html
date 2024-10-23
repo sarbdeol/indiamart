@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f7f8fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            position: fixed;
+            height: 100%;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+        .sidebar h3 {
+            color: white;
+            margin-bottom: 30px;
+        }
+        .sidebar ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar ul li a {
+            color: #c2c7d0;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .sidebar ul li a:hover {
+            color: white;
+        }
+
+        /* Main Content */
+        .content {
+            margin-left: 250px;
+            padding: 40px;
+            width: 100%;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Top Buttons and User Info */
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-controls .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-controls button {
+            width: 60px;
+            height: 60px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: white;
+        }
+
+        .btn-start {
+            background-color: #28a745;
+            width: 120px !important;
+        }
+
+        .btn-stop {
+            background-color: #dc3545;
+            width: 120px !important;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .form-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .form-section input, .form-section button {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .logs-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+            max-height: 400px;
+            overflow-y: scroll;
+        }
+
+        .footer {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Dashboard</h3>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="/setting">Settings</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Top Controls: Start/Stop Buttons and IndiaMart Account Username -->
+            <div class="header-controls">
+                <div class="buttons">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <button type="submit" name="start_selenium" class="btn-start">Start</button>
+                        <button type="submit" name="stop_selenium" class="btn-stop">Stop</button>
+                    </form>
+                </div>
+                <div class="user-info">
+                    <span>IndiaMart User:</span>
+                    {% if indiamart_account %}
+                        <span>{{ indiamart_account.indiamart_username }}</span>
+                    {% else %}
+                        <span>No Account</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Keyword and Category Sections -->
+            <div class="form-section">
+                <div class="card" style="flex: 1;">
+                    <h5>Category Accept Keywords</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for keyword in category_keywords %}
+                            <tr>
+                                <td>{{ keyword.keyword }}</td>
+                                <td>
+                                    <a href="{% url 'delete_category_keyword' keyword.id %}" class="btn btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ category_form.keyword.label_tag }} {{ category_form.keyword }}
+                        </div>
+                        <div class="form-group">
+                            {{ category_form.category.label_tag }} {{ category_form.category }}
+                        </div>
+                        <button type="submit" name="add_category_keyword" class="btn btn-primary">Add Keyword</button>
+                    </form>
+                </div>
+
+                <div class="card" style="flex: 1;">
+                    <h5>Schedule Settings</h5>
+                    <form method="POST" action="{% url 'schedule_start_function' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Option to run 24/7 -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="run_24_7" name="run_24_7">
+                            <label class="form-check-label" for="run_24_7">Run 24/7</label>
+                        </div>
+                
+                        <!-- Time Range -->
+                        <div class="form-group">
+                            <label for="time_range">Time Range:</label>
+                            <input type="time" id="start_time" name="start_time" class="form-control" required>
+                            to
+                            <input type="time" id="end_time" name="end_time" class="form-control" required>
+                        </div>
+                
+                        <!-- Days of the Week -->
+                        <div class="form-group">
+                            <label for="days_of_week">Days of the Week:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="monday" name="days[]" value="monday"
+                                {% if schedule and 'monday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="monday">Monday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tuesday" name="days[]" value="tuesday"
+                                {% if schedule and 'tuesday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="tuesday">Tuesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="wednesday" name="days[]" value="wednesday"
+                                    {% if schedule and 'wednesday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="wednesday">Wednesday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="thursday" name="days[]" value="thursday" 
+                                    {% if schedule and 'thursday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="thursday">Thursday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="friday" name="days[]" value="friday" 
+                                    {% if schedule and 'friday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="friday">Friday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="saturday" name="days[]" value="saturday" 
+                                    {% if schedule and 'saturday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="saturday">Saturday</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sunday" name="days[]" value="sunday" 
+                                    {% if schedule and 'sunday' in schedule.days_of_week %}checked{% endif %}>
+                                <label class="form-check-label" for="sunday">Sunday</label>
+                            </div>
+                            <!-- Add checkboxes for all other days -->
+                        </div>
+                
+                        <button class="btn btn-primary" type="submit">Schedule</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Scheduled Tasks Section -->
+            <div class="card mt-4">
+                <h5>Scheduled Tasks</h5>
+                {% if schedules %}
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Run 24/7</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Days</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in schedules %}
+                                <tr>
+                                    <td>{{ schedule.run_24_7 }}</td>
+                                    <td>{{ schedule.start_time }}</td>
+                                    <td>{{ schedule.end_time }}</td>
+                                    <td>{{ schedule.days_of_week }}</td>
+                                    <td>
+                                        <a href="{% url 'delete_schedule' schedule.id %}" class="btn btn-danger">Delete</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>No schedules found.</p>
+                {% endif %}
+            </div>
+                
+            
+
+            <!-- Reject Keywords and Quantity Section -->
+            <div class="form-section">
+                <div class="card" style="flex: 1;">
+                    <h5>Reject Keywords (Headings)</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Keyword</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for keyword in rejected_keywords %}
+                            <tr>
+                                <td>{{ keyword.keyword }}</td>
+                                <td>
+                                    <a href="{% url 'delete_rejected_keyword' keyword.id %}" class="btn btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ rejected_form.keyword.label_tag }} {{ rejected_form.keyword }}
+                        </div>
+                        <button type="submit" name="add_rejected_keyword" class="btn btn-primary">Add Keyword</button>
+                    </form>
+                </div>
+
+                <div class="card" style="flex: 1;">
+                    <h5>Quantity</h5>
+                    <form method="POST" class="form-section">
+                        {% csrf_token %}
+                        {{ quantity_form.quantity.label_tag }} 
+                        {{ quantity_form.quantity }}  <!-- Display the quantity input field -->
+                        <button type="submit" name="save_quantity" class="btn btn-primary">Edit Apply and Save</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="card logs-container">
+                <h4>Execution Logs</h4>
+                <ul id="logs-list">
+                    <li>No logs available yet.</li>
+                </ul>
+            </div>
+
+            <!-- Footer -->
+            <div class="card footer">
+                <h5>Dash</h5>
+                <ul>
+                    {% for notification in notifications %}
+                        <li>
+                            <strong>{{ notification.timestamp }}:</strong> {{ notification.message }}
+                        </li>
+                    {% empty %}
+                        <li>...</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Optional JavaScript for Start/Stop functionality -->
+    <script>
+    document.getElementById('startButton').addEventListener('click', function() {
+        alert('Process Started!');
+        // Additional JavaScript for start process
+    });
+
+    document.getElementById('stopButton').addEventListener('click', function() {
+        alert('Process Stopped!');
+        // Additional JavaScript for stop process
+    });
+    </script>
+    <script>
+        function fetchLogs() {
+            $.ajax({
+                url: "{% url 'fetch_logs' %}",  // Fetch logs from the server
+                method: "GET",
+                success: function(data) {
+                    var logsList = $("#logs-list");  // Ensure the correct ID is being targeted
+                    logsList.empty();  // Clear the current logs
+                    var logs = data.logs;
+    
+                    // Check if logs are available and display them
+                    if (logs.length === 0) {
+                        logsList.append("<li>No logs available yet.</li>");
+                    } else {
+                        logs.forEach(function(log) {
+                            logsList.append("<li>" + log + "</li>");
+                        });
+                    }
+                },
+                error: function(error) {
+                    console.log("Error fetching logs:", error);  // Debug any AJAX errors
+                }
+            });
+        }
+    
+        // Fetch logs every 5 seconds (5000 milliseconds)
+        setInterval(fetchLogs, 5000);
+    </script>
+    
+</body>
+</html>
