@@ -189,7 +189,16 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    <form method="POST">
+                    <form method="POST" id="categoryKeywordForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ category_form.keyword.label_tag }} 
+                            {{ category_form.keyword }}  <!-- This generates the input for the keyword -->
+                        </div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('add_category_keyword')">Add Keyword</button>
+                        <input type="hidden" name="add_category_keyword" value="true"> <!-- Hidden input to signify the action -->
+                    </form>
+                    <!-- <form method="POST">
                         {% csrf_token %}
                         <div class="form-group">
                             {{ category_form.keyword.label_tag }} {{ category_form.keyword }}
@@ -198,7 +207,7 @@
                             {{ category_form.category.label_tag }} {{ category_form.category }}
                         </div>
                         <button type="submit" name="add_category_keyword" class="btn btn-primary">Add Keyword</button>
-                    </form>
+                    </form> -->
                 </div>
 
                 <div class="card" style="flex: 1;">
@@ -323,22 +332,25 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    <form method="POST">
+                    <form method="POST" id="rejectedKeywordForm">
                         {% csrf_token %}
                         <div class="form-group">
-                            {{ rejected_form.keyword.label_tag }} {{ rejected_form.keyword }}
+                            {{ rejected_form.keyword.label_tag }} 
+                            {{ rejected_form.keyword }}  <!-- This generates the input for the keyword -->
                         </div>
-                        <button type="submit" name="add_rejected_keyword" class="btn btn-primary">Add Keyword</button>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('add_rejected_keyword')">Add Keyword</button>
+                        <input type="hidden" name="add_rejected_keyword" value="true"> <!-- Hidden input to signify the action -->
                     </form>
                 </div>
 
                 <div class="card" style="flex: 1;">
                     <h5>Quantity</h5>
-                    <form method="POST" class="form-section">
+                    <form method="POST" id="quantityForm" class="form-section">
                         {% csrf_token %}
                         {{ quantity_form.quantity.label_tag }} 
                         {{ quantity_form.quantity }}  <!-- Display the quantity input field -->
-                        <button type="submit" name="save_quantity" class="btn btn-primary">Edit Apply and Save</button>
+                        <button type="button" name="save_quantity" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('save_quantity')">Edit Apply and Save</button>
+                        <input type="hidden" name="save_quantity" value="true">
                     </form>
                 </div>
             </div>
@@ -363,6 +375,27 @@
                         <li>...</li>
                     {% endfor %}
                 </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Modal for Password Entry -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordModalLabel">Enter Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="text-danger" id="passwordError" style="display:none;"></div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -408,6 +441,47 @@
     
         // Fetch logs every 5 seconds (5000 milliseconds)
         setInterval(fetchLogs, 5000);
+    </script>
+    <script>
+        function setFormAction(action) {
+            // Store the action in a hidden input field or use a variable
+            document.getElementById('passwordForm').dataset.action = action;
+        }
+    
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();  // Prevent the default form submission
+    
+            const password = document.getElementById('password').value;
+    
+            // Make an AJAX request to check the password
+            fetch('{% url "check_password" %}', {  // Replace with your URL for password verification
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token for Django
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // If password is correct, submit the form
+                    const action = e.target.dataset.action;
+    
+                    // Redirect to the form action based on the button clicked
+                    if (action === 'add_rejected_keyword') {
+                        document.getElementById('rejectedKeywordForm').submit();
+                    } else if (action === 'save_quantity') {
+                        document.getElementById('quantityForm').submit();
+                    } else if (action === 'add_category_keyword') {
+                        document.getElementById('categoryKeywordForm').submit();
+                    }
+                } else {
+                    // Show error message
+                    document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
+                    document.getElementById('passwordError').style.display = 'block';
+                }
+            });
+        });
     </script>
     
 </body>

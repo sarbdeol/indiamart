@@ -27,12 +27,15 @@ def login_to_indiamart(username, password, port_number):
         chrome_options.add_experimental_option("debuggerAddress", f"localhost:{port_number}")
 
         chrome_service = Service("/path/to/chromedriver")  # Update path to chromedriver
-        driver = webdriver.Chrome(options=chrome_options)
+        driver = webdriver.Edge(options=chrome_options)
 
         # Step 2: Navigate to the IndiaMart Seller Login page
         driver.get("https://seller.indiamart.com/bltxn/?pref=recent")
         time.sleep(3)
-
+        try:
+            driver.find_element(By.XPATH,'/html/body/div[5]/div[2]/div[1]/div[2]/div[2]/button[1]').click()
+        except:
+            pass
         # Step 3: Enter the username and password
         otp_login_button = driver.find_element(By.XPATH, "//input[@placeholder='Enter 10 digit mobile number']")
         otp_login_button.send_keys(username)
@@ -60,11 +63,18 @@ def login_to_indiamart(username, password, port_number):
         time.sleep(5)
 
         if "recent" in driver.current_url:
-            print("Logged in successfully!")
-            driver.quit()
+            try:
+                verify_check=driver.find_element(By.XPATH,"//*[contains(text(),'Verify Details to Confirm your Identity')]")
+                if verify_check:
+                    return False
+            except:
+                return True
+            else:
+                print("Logged in successfully!")
+                driver.quit()
             
-            return True
-
+                return True
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         return False

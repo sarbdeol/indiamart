@@ -7,6 +7,8 @@ import subprocess
 from .config import keywordcategory, keywordsrejectheading, max_counter  # Importing from config.py
 from django.contrib.auth.models import User
 from accounts.models import Notification  # Import the Notification model
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 # Initialize success and failure counters
 success_counter = 0
 failure_counter = 0
@@ -15,7 +17,7 @@ failure_counter = 0
 def refresh_page(url):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("debuggerAddress", "localhost:9222")
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Edge(options=options)
 
     try:
         driver.get(url)
@@ -90,14 +92,18 @@ def check_time_and_execute(driver):
         if minutes < 5:
             
             print("0")
-            subprocess.run(["python3", "click.py"])  # Runs another script
+            contact_buyer_button = driver.find_element(By.XPATH, "//span[text()='Contact Buyer Now']")
+            contact_buyer_button.click()
+            print("Clicked the first 'Contact Buyer Now' button.")
+            
+            # subprocess.run(["python3", "c:/Users/Administrator/Desktop/myproject/Scraper/click.py"])  # Runs another script
             return 1  # Return 1 if script is run
 
         print("Time is 5 minutes or more, no action taken.")
         return 0  # Return 0 if no action is taken
 
     except Exception as e:
-        print("1")
+        print("mins ago not found")
         return 0  # Return 0 in case of error
 
 
@@ -111,13 +117,16 @@ import sys
 # Import user_logs from the views
 from accounts.log_store import user_logs
 # Main Selenium function to execute the script
+india_click=False
+click_result=1
 def run_selenium_script(port_number, username, category_keywords, rejected_keywords, quantity,stop_event):
+    global india_click,click_result
     url = "https://seller.indiamart.com/bltxn/?pref=recent"
     
     # Initialize success and failure counters
-    success_counter = 0
+    success_counter = quantity
     failure_counter = 0
-    max_counter = quantity  # Or fetch from config if needed
+    max_counter = 0  # Or fetch from config if needed
 
     # Initialize logs for the user
     if username not in user_logs:
@@ -128,14 +137,19 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
         print(message)
 
     # Rest of your selenium logic, calling log_message at key steps
-    log_message("Automation script started...")
+    log_message("Process started...")
     # Function to refresh the page
     def refresh_page(url):
         options = webdriver.ChromeOptions()
         options.add_experimental_option("debuggerAddress", f"localhost:{port_number}")
-        driver = webdriver.Chrome(options=options)
+        driver = webdriver.Edge(options=options)
         try:
             driver.get(url)
+            time.sleep(4)
+            try:
+                driver.find_element(By.XPATH,'/html/body/div[5]/div[2]/div[1]/div[2]/div[2]/button[1]').click()
+            except:
+                pass
             driver.refresh()
             # log_message("Page refreshed successfully.")
             
@@ -157,14 +171,14 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
         # Main loop
     open_chrome(port_number)
 
-    while success_counter < max_counter:
+    while success_counter > max_counter:
         if stop_event.is_set():  # Check if the stop event is set
-            log_message("Automation stopped by user request.")
+            log_message("process stopped by user request.")
             break  # Exit the loop if the stop event is set
 
         time.sleep(2)
         driver = refresh_page(url)
-        
+        wait = WebDriverWait(driver, 10)
         if driver:
             time.sleep(3)
             try:
@@ -174,8 +188,12 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                 user = User.objects.get(username=username)  # Replace with the correct user logic
                 Notification.objects.create(user=user, message=notification_text)
             except Exception as e:
-                print(e)
-            click_result = click_india_label(driver)
+                # print(e)
+                pass
+            if not india_click:
+                click_result = click_india_label(driver)
+                india_click=True
+
             
             if click_result == 0:
                 time.sleep(3)
@@ -196,41 +214,50 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                             # Increment success counter if all functions were successful
                             if time_check_result == 1:
                                 log_message("New lead found")
-                                success_counter += 1
-                                span_element = driver.find_element(By.XPATH, '//span[contains(@style,"cursor: pointer") and contains(@style,"color: rgb(42, 166, 153);")]')
-                                span_text = span_element.text
+
+                                max_counter += 1
+                                try:
+                                    span_element = wait.until(
+                                        EC.visibility_of_element_located(
+                                            (By.XPATH, '//span[contains(@style,"cursor: pointer") and contains(@style,"color: rgb(42, 166, 153);")]')
+                                        )
+                                    )
+                                    span_text = span_element.text
+                                    print(span_text)  # Output the text of the span element
+                                except :
+                                    print("green Element not found within the time limit.")
                                 log_message(f"Title : {span_text}")
                                 h2_element = driver.find_element(By.TAG_NAME, "h2")
                                 h2_text = h2_element.text
                                 log_message(f"Heading : {h2_text}")
-
+                                log_message("Contact Clicked")
                                 print(f"Successful run count: {success_counter}/{max_counter}")
-                                log_message(f"Successful run {success_counter}/{max_counter}")
+                                # log_message(f"Successful run {success_counter}/{max_counter}")
                             else:
                                 failure_counter += 1
                                 print(f"Unsuccessful run count: {failure_counter}")
                         else:
                             failure_counter += 1
                             print(f"Unsuccessful run count: {failure_counter}")
-                            sys.exit(h2_result)  # Exit if the <h2> check fails
+                            # sys.exit(h2_result)  # Exit if the <h2> check fails
                     else:
                         failure_counter += 1
                         print(f"Unsuccessful run count: {failure_counter}")
-                        sys.exit(span_result)  # Exit if the span check fails
+                        # sys.exit(span_result)  # Exit if the span check fails
                 else:
                     failure_counter += 1
                     print(f"Unsuccessful run count: {failure_counter}")
-                    sys.exit(1)  # Exit if the second refresh fails
+                    # sys.exit(1)  # Exit if the second refresh fails
             else:
                 failure_counter += 1
                 print(f"Unsuccessful run count: {failure_counter}")
-                sys.exit(click_result)  # Exit if clicking the label fails
+                # sys.exit(click_result)  # Exit if clicking the label fails
         else:
             failure_counter += 1
             print(f"Unsuccessful run count: {failure_counter}")
-            sys.exit(1)  # Exit if the first page refresh fails
+            # sys.exit(1)  # Exit if the first page refresh fails
             # log_message("Failed to refresh the page.")
-            break
+            # break
 
-    log_message(f"Script execution completed. Successes: {success_counter}, Failures: {failure_counter}")
+    log_message(f"Process execution completed. Successes: {success_counter}, Failures: {failure_counter}")
     driver.quit()

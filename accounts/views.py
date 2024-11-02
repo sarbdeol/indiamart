@@ -55,6 +55,7 @@ from datetime import timedelta
 
 @csrf_exempt
 def paymenthandler(request):
+    print(request.POST)
     if request.method == "POST":
         try:
             payment_id = request.POST.get('razorpay_payment_id', '')
@@ -103,18 +104,21 @@ def dashboard_view(request):
     # Fetch the associated Celery PeriodicTasks
     periodic_tasks = PeriodicTask.objects.filter(name__icontains=request.user.username)
 
-    logs = user_logs.get(request.user.username, [])  # Fetch logs for the current user
+    # logs = user_logs.get(request.user.username, [])  # Fetch logs for the current user
 
     # Fetch the user's IndiaMartAccount
     try:
         indiamart_account = IndiaMartAccount.objects.get(user=request.user)
     except IndiaMartAccount.DoesNotExist:
         indiamart_account = None
-    logs = user_logs.get(request.user.username, [])
+    # logs = user_logs.get(request.user.username, [])
     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
-
+    category_form = CategoryKeywordForm()
+    rejected_form = RejectedKeywordForm()
+    quantity_form = QuantityForm(instance=indiamart_account)
     # Handle forms for adding new keywords
     if request.method == 'POST':
+        print(request.POST)
         if 'start_selenium' in request.POST:
             # Fetch the port_number and keywords
             port_number = request.user.profile.port_number
@@ -133,7 +137,7 @@ def dashboard_view(request):
             )
             thread.start()
 
-            logs.append(f"Automation script started for {request.user.username} on port {port_number}")
+            # logs.append(f"Automation script started for {request.user.username} on port {port_number}")
             return redirect('dashboard')
 
         if 'stop_selenium' in request.POST:
@@ -142,7 +146,7 @@ def dashboard_view(request):
                 stop_event = stop_events[request.user.username]
                 stop_event.set()  # Signal the thread to stop
 
-                logs.append(f"Automation script stopped for {request.user.username}")
+                # logs.append(f"Automation process stopped for {request.user.username}")
                 return redirect('dashboard')
 
         if 'save_quantity' in request.POST:
@@ -180,7 +184,7 @@ def dashboard_view(request):
         'rejected_keywords': RejectedKeyword.objects.filter(user=request.user),
         'category_form': category_form,
         'rejected_form': rejected_form,
-        'logs': logs,
+        # 'logs': logs,
         'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
     }
 
@@ -225,6 +229,8 @@ def setting_view(request):
             print('start')
             if login_successful:
                 return redirect('setting')
+            else:
+                return redirect('contact')
 
     else:
         form = IndiaMartAccountForm(instance=indiamart_account)
@@ -235,8 +241,23 @@ def setting_view(request):
     }
     return render(request, 'setting.html', context)
 
+def contact(request):
+    return render(request, 'contact.html')
 
+@csrf_exempt  # For simplicity; consider using decorators for better security
+@login_required
+def check_password(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        password = data.get('password')
 
+        # Check if the password is correct
+        if request.user.check_password(password):
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'fail'}, status=400)
+
+    return JsonResponse({'status': 'fail'}, status=400)
 # Register View
 def register_view(request):
     if request.method == 'POST':

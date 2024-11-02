@@ -122,47 +122,13 @@
         <div class="content">
             <div class="container">
                 <div class="card">
-                    <h2>Connect Your IndiaMart Account</h2>
-                    <p>Enter your IndiaMart credentials to connect your account:</p>
-
-                    <form method="post">
-                        {% csrf_token %}
-                        {{ form.as_p }}
-                        {% if indiamart_account %}
-                            <button type="submit" class="btn-primary" disabled>Connect</button>  <!-- Button is disabled if account exists -->
-                            <p>You are already connected to IndiaMart as {{ indiamart_account.indiamart_username }}.</p>
-                        {% else %}
-                            <button type="submit" class="btn-primary">Connect</button>  <!-- Button is enabled if no account exists -->
-                        {% endif %}
-                        
-                    </form>
-
-                    {% if indiamart_account %}
-                        <div class="alert alert-success" role="alert">
-                            You have successfully connected your IndiaMart account!
-                        </div>
-                    {% endif %}
+                    <h2>Something wrong! Please Contact Support Team</h2>
                 </div>
             </div>
         </div>
     </div>
-    <div class="container mt-5">
-        <h2>Connect Your IndiaMart Account</h2>
-        <p>Enter your IndiaMart credentials to connect your account:</p>
-
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-
-            <button type="submit" class="btn btn-primary">Connect</button>
-        </form>
-
-        {% if indiamart_account %}
-            <div class="alert alert-success mt-4" role="alert">
-                You have successfully connected your IndiaMart account!
-            </div>
-        {% endif %}
-    </div>
+        
+        
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
