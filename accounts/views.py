@@ -13,7 +13,7 @@ from .selenium_login import login_to_indiamart
 import threading
 from Scraper.runnew import run_selenium_script
 from django.conf import settings
-import razorpay
+import razorpay,json
 from django.http import HttpResponse
 from .models import Subscription
 from datetime import datetime
@@ -100,9 +100,8 @@ def fetch_logs(request):
 @login_required
 def dashboard_view(request):
     schedules = ScheduleSettings.objects.filter(user=request.user)
-
+    
     # Fetch the associated Celery PeriodicTasks
-    periodic_tasks = PeriodicTask.objects.filter(name__icontains=request.user.username)
 
     # logs = user_logs.get(request.user.username, [])  # Fetch logs for the current user
 
@@ -145,7 +144,9 @@ def dashboard_view(request):
             if request.user.username in stop_events:
                 stop_event = stop_events[request.user.username]
                 stop_event.set()  # Signal the thread to stop
-
+                user = request.user
+                user.profile.stop_selenium = True
+                user.profile.save()
                 # logs.append(f"Automation process stopped for {request.user.username}")
                 return redirect('dashboard')
 
@@ -177,7 +178,6 @@ def dashboard_view(request):
 
     context = {
         'schedules': schedules,
-        'periodic_tasks': periodic_tasks,
         'notifications':notifications,
         'quantity_form': quantity_form,
         'category_keywords': CategoryKeyword.objects.filter(user=request.user),
@@ -217,17 +217,22 @@ def setting_view(request):
             form = IndiaMartAccountForm(request.POST)
         
         if form.is_valid():
+            # Temporarily create the instance but do not save to the database yet
             indiamart_account = form.save(commit=False)
             indiamart_account.user = request.user
-            indiamart_account.save()
 
             username = indiamart_account.indiamart_username
             password = indiamart_account.indiamart_password
-            port_number = request.user.profile.port_number  # Get u ser's port number
+            port_number = request.user.profile.port_number  # Get user's port number
             print((username, password, port_number))
+            
+            # Attempt to log in to IndiaMart
             login_successful = login_to_indiamart(username, password, port_number)
             print('start')
+            
+            # Save only if login is successful
             if login_successful:
+                indiamart_account.save()
                 return redirect('setting')
             else:
                 return redirect('contact')
@@ -335,31 +340,19 @@ def edit_profile_view(request):
 
     return render(request, 'edit_profile.html', {'form': form})
 
-from celery import shared_task
 from datetime import datetime
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .models import ScheduleSettings
-from django_celery_beat.models import PeriodicTask, IntervalSchedule
 from django.utils import timezone
-from .tasks import start_selenium_at_scheduled_time
 from django.shortcuts import render, redirect, get_object_or_404
-import json
-
-
-
 
 @login_required
 def delete_schedule(request, schedule_id):
     """Delete a schedule"""
     schedule = get_object_or_404(ScheduleSettings, id=schedule_id, user=request.user)
     schedule.delete()
-
-    # Also remove the associated Celery task
-    PeriodicTask.objects.filter(name=f"Start Selenium for {request.user.username} - Scheduled").delete()
-
     return redirect('dashboard')
-
-
 
 @login_required
 def schedule_start_function(request):
@@ -378,37 +371,6 @@ def schedule_start_function(request):
         schedule.end_time = end_time
         schedule.days_of_week = days_of_week
         schedule.save()
-
-        # Schedule the task based on the user's input
-        # Clean up existing periodic tasks for the user
-        PeriodicTask.objects.filter(name__icontains=request.user.username).delete()
-
-        if run_24_7:
-            # Create a periodic task for running continuously
-            interval, created = IntervalSchedule.objects.get_or_create(
-                every=1,
-                period=IntervalSchedule.MINUTES  # Adjust based on your requirement
-            )
-            PeriodicTask.objects.create(
-                interval=interval,
-                name=f"Start Selenium for {request.user.username} - 24/7",
-                task='accounts.tasks.start_selenium_at_scheduled_time',  # Adjust to your task name
-                args=json.dumps([request.user.id, start_time, end_time, days_of_week]),
-                start_time=timezone.now()  # Start immediately if 24/7 is selected
-            )
-        else:
-            # If specific days and time are selected, schedule the task
-            interval, created = IntervalSchedule.objects.get_or_create(
-                every=1,
-                period=IntervalSchedule.MINUTES  # Adjust for your requirement
-            )
-            PeriodicTask.objects.create(
-                interval=interval,
-                name=f"Start Selenium for {request.user.username} - Scheduled",
-                task='accounts.tasks.start_selenium_at_scheduled_time',  # Adjust to your task name
-                args=json.dumps([request.user.id, start_time, end_time, days_of_week]),
-                start_time=timezone.now()  # Start from now or a specific time
-            )
 
         return redirect('dashboard')  # Redirect to the dashboard after saving
 

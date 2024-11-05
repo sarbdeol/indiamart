@@ -5,11 +5,13 @@ from django.dispatch import receiver
 import random
 from datetime import timedelta
 from django.utils import timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
 # Profile model to extend the built-in User model
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # Link to User model
     port_number = models.IntegerField(unique=True, blank=True, null=True)  # Field for storing port number
-
+    stop_selenium = models.BooleanField(default=False)  # Field to control stopping the Selenium task
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
@@ -94,7 +96,57 @@ class ScheduleSettings(models.Model):
     run_24_7 = models.BooleanField(default=False)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
+    chrome_port = models.IntegerField(null=True, blank=True)
     days_of_week = models.CharField(max_length=200, blank=True)  # Store days as a comma-separated list
 
     def __str__(self):
         return f"Schedule for {self.user.username}"
+
+    @property
+    def status(self):
+        """Determine if the schedule is 'running', has 'time_left' to start, or is 'finished'."""
+        now = timezone.localtime(timezone.now())
+        current_day = now.strftime('%A').lower()
+
+        # Check if today is within the scheduled days
+        days = self.days_of_week.lower().split(',') if self.days_of_week else []
+        if self.run_24_7 or current_day in days:
+            start_datetime = timezone.make_aware(datetime.combine(now.date(), self.start_time))
+            end_datetime = timezone.make_aware(datetime.combine(now.date(), self.end_time))
+            
+            if start_datetime <= now <= end_datetime:
+                return 'running'
+            elif now < start_datetime:
+                return 'time_left'
+            else:
+                return 'finished'
+        return 'finished'
+
+    @property
+    def time_left(self):
+        """Calculate the time left to start or finish, depending on the status."""
+        now = timezone.localtime(timezone.now())
+        current_day = now.strftime('%A').lower()
+        
+        # Check if today is within the scheduled days
+        days = self.days_of_week.lower().split(',') if self.days_of_week else []
+        if self.run_24_7 or current_day in days:
+            start_datetime = timezone.make_aware(datetime.combine(now.date(), self.start_time))
+            end_datetime = timezone.make_aware(datetime.combine(now.date(), self.end_time))
+            
+            if now < start_datetime:
+                # Time left until the task starts
+                time_remaining = start_datetime - now
+                return f"Time left to start: {self.format_time_remaining(time_remaining)}"
+            elif start_datetime <= now <= end_datetime:
+                # Time left until the task finishes
+                time_remaining = end_datetime - now
+                return f"Time left to finish: {self.format_time_remaining(time_remaining)}"
+        
+        return "Task has finished for today."
+
+    def format_time_remaining(self, delta):
+        """Format the time delta in hours and minutes."""
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        return f"{hours} hours, {minutes} minutes"

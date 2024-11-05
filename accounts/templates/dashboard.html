@@ -286,6 +286,8 @@
                                 <th>Start Time</th>
                                 <th>End Time</th>
                                 <th>Days</th>
+                                <th>Status</th>
+                                <th>Time left</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -296,6 +298,8 @@
                                     <td>{{ schedule.start_time }}</td>
                                     <td>{{ schedule.end_time }}</td>
                                     <td>{{ schedule.days_of_week }}</td>
+                                    <td>{{ schedule.status }}</td>
+                                    <td>{{schedule.time_left}}</td>
                                     <td>
                                         <a href="{% url 'delete_schedule' schedule.id %}" class="btn btn-danger">Delete</a>
                                     </td>

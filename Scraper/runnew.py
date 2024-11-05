@@ -14,24 +14,6 @@ success_counter = 0
 failure_counter = 0
 
 # Function to refresh the page
-def refresh_page(url):
-    options = webdriver.ChromeOptions()
-    options.add_experimental_option("debuggerAddress", "localhost:9222")
-    driver = webdriver.Edge(options=options)
-
-    try:
-        driver.get(url)
-        driver.refresh()
-
-        if driver.current_url == url:
-            print("Page refreshed successfully.")
-            return driver  # Return the driver on success
-        else:
-            print("Failed to refresh the page.")
-            return None  # Return None on failure
-    except WebDriverException as e:
-        print(f"An error occurred: {e}")
-        return None  # Return None in case of an error
 
 # Function to click the first label element that contains 'India'
 def click_india_label(driver):
@@ -48,6 +30,7 @@ def click_india_label(driver):
 # Function to read and check the text inside the first <span> element
 def check_span_for_keywords(driver,keywordcategory):
     try:
+        driver.save_screenshot('check.png')
         span_element = driver.find_element(By.XPATH, '//span[contains(@style,"cursor: pointer") and contains(@style,"color: rgb(42, 166, 153);")]')
         span_text = span_element.text
         
@@ -113,7 +96,7 @@ from selenium.webdriver.common.by import By
 import time
 import subprocess
 import sys
-
+from threading import Event
 # Import user_logs from the views
 from accounts.log_store import user_logs
 # Main Selenium function to execute the script
@@ -122,7 +105,9 @@ click_result=1
 def run_selenium_script(port_number, username, category_keywords, rejected_keywords, quantity,stop_event):
     global india_click,click_result
     url = "https://seller.indiamart.com/bltxn/?pref=recent"
-    
+    if stop_event is None:
+        stop_event = Event()  # Create an event if none was provided
+
     # Initialize success and failure counters
     success_counter = quantity
     failure_counter = 0
@@ -142,6 +127,8 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
     def refresh_page(url):
         options = webdriver.ChromeOptions()
         options.add_experimental_option("debuggerAddress", f"localhost:{port_number}")
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
         driver = webdriver.Edge(options=options)
         try:
             driver.get(url)
@@ -150,7 +137,12 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                 driver.find_element(By.XPATH,'/html/body/div[5]/div[2]/div[1]/div[2]/div[2]/button[1]').click()
             except:
                 pass
-            driver.refresh()
+            try:
+                driver.find_element(By.XPATH,'//*[@id="blmain_div"]/section/div[1]/div/ul/li[2]/a').click()
+            except:
+                driver.refresh()
+                pass
+            
             # log_message("Page refreshed successfully.")
             
             return driver
@@ -158,15 +150,30 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
             log_message(f"An error occurred while refreshing the page: {e}")
             return None
     
-    def open_chrome(port_number):
-        chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Adjust path to your chrome.exe
-        user_data_dir = f"C:/Chrome session_{port_number}"  # Use a port-specific user data directory
+    # def open_chrome(port_number):
+    #     chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe"  # Adjust path to your chrome.exe
+    #     user_data_dir = f"C:/Chrome session_{port_number}"  # Use a port-specific user data directory
         
+    #     chrome_command = [
+    #         chrome_path,
+    #         f"--remote-debugging-port={port_number}",
+    #         f"--user-data-dir={user_data_dir}"
+    #     ]
+    #     subprocess.Popen(chrome_command)
+    
+    def open_chrome(port_number):
+        chrome_path = "/usr/bin/google-chrome"  # Path to Chrome on Ubuntu
+        user_data_dir = f"/tmp/chrome_session_{port_number}"  # Use a port-specific user data directory
+
         chrome_command = [
             chrome_path,
             f"--remote-debugging-port={port_number}",
-            f"--user-data-dir={user_data_dir}"
+            f"--user-data-dir={user_data_dir}",
+            "--no-sandbox",  # Use --no-sandbox if you're running as root
+            "--disable-gpu",  # Disable GPU usage (often useful on servers)
+            "--headless"  # Run in headless mode for servers without a display
         ]
+
         subprocess.Popen(chrome_command)
         # Main loop
     open_chrome(port_number)
@@ -236,9 +243,11 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                             else:
                                 failure_counter += 1
                                 print(f"Unsuccessful run count: {failure_counter}")
+                                driver.save_screenshot('Unsuccessful1.png')
                         else:
                             failure_counter += 1
                             print(f"Unsuccessful run count: {failure_counter}")
+                            driver.save_screenshot('Unsuccessful2.png')
                             # sys.exit(h2_result)  # Exit if the <h2> check fails
                     else:
                         failure_counter += 1
@@ -259,5 +268,5 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
             # log_message("Failed to refresh the page.")
             # break
 
-    log_message(f"Process execution completed. Successes: {success_counter}, Failures: {failure_counter}")
+    # log_message(f"Process execution completed. Successes: {success_counter}, Failures: {failure_counter}")
     driver.quit()
