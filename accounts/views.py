@@ -9,6 +9,9 @@ from .form import IndiaMartAccountForm,EditProfileForm
 from .models import CategoryKeyword, RejectedKeyword,Notification
 from .form import CategoryKeywordForm, RejectedKeywordForm,QuantityForm
 from .models import IndiaMartAccount
+
+from .models import MessagePrompt
+from .form import MessagePromptForm
 from .selenium_login import login_to_indiamart
 import threading
 from Scraper.runnew import run_selenium_script
@@ -115,6 +118,10 @@ def dashboard_view(request):
     category_form = CategoryKeywordForm()
     rejected_form = RejectedKeywordForm()
     quantity_form = QuantityForm(instance=indiamart_account)
+    message_prompts = MessagePrompt.objects.filter(user=request.user)
+    message_prompt_form = MessagePromptForm()
+
+    
     # Handle forms for adding new keywords
     if request.method == 'POST':
         print(request.POST)
@@ -124,7 +131,7 @@ def dashboard_view(request):
             category_keywords = list(CategoryKeyword.objects.filter(user=request.user).values_list('keyword', flat=True))
             rejected_keywords = list(RejectedKeyword.objects.filter(user=request.user).values_list('keyword', flat=True))
             quantity = indiamart_account.quantity if indiamart_account else 0
-
+            message_prompts = list(MessagePrompt.objects.filter(user=request.user).values_list('message_text', flat=True))
             # Initialize the stop event for this user
             stop_event = threading.Event()
             stop_events[request.user.username] = stop_event
@@ -132,7 +139,7 @@ def dashboard_view(request):
             # Start the Selenium script in a separate thread
             thread = threading.Thread(
                 target=run_selenium_script, 
-                args=(port_number, request.user.username, category_keywords, rejected_keywords, quantity, stop_event)
+                args=(port_number, request.user.username, category_keywords, rejected_keywords, quantity, stop_event,message_prompts)
             )
             thread.start()
 
@@ -169,13 +176,24 @@ def dashboard_view(request):
                 new_reject_keyword.user = request.user
                 new_reject_keyword.save()
                 return redirect('dashboard')
-            
+        if 'add_message_prompt' in request.POST:
+            form = MessagePromptForm(request.POST)
+            if form.is_valid():
+                new_form = form.save(commit=False)
+                new_form.user = request.user
+                new_form.save()
+                form.save()
+                messages.success(request, "Message prompt added successfully.")
+                return redirect('dashboard')
+            else:
+                messages.error(request, "Failed to add message prompt.")
+
         
     else:
         category_form = CategoryKeywordForm()
         rejected_form = RejectedKeywordForm()
         quantity_form = QuantityForm(instance=indiamart_account)
-
+        message_prompt_form=MessagePromptForm()
     context = {
         'schedules': schedules,
         'notifications':notifications,
@@ -185,6 +203,8 @@ def dashboard_view(request):
         'category_form': category_form,
         'rejected_form': rejected_form,
         # 'logs': logs,
+        'message_prompts': message_prompts,
+        'message_prompt_form': message_prompt_form,
         'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
     }
 
@@ -377,3 +397,13 @@ def schedule_start_function(request):
     # If GET request, render the schedule form
     schedule = ScheduleSettings.objects.filter(user=request.user).first()  # Fetch existing schedule if any
     return render(request, 'schedule_form.html', {'schedule': schedule})
+
+
+
+
+@login_required
+def delete_message_prompt(request, prompt_id):
+    prompt = get_object_or_404(MessagePrompt, id=prompt_id)
+    prompt.delete()
+    messages.success(request, "Message prompt deleted successfully.")
+    return redirect('dashboard')

@@ -150,3 +150,9 @@ class ScheduleSettings(models.Model):
         hours, remainder = divmod(delta.seconds, 3600)
         minutes, _ = divmod(remainder, 60)
         return f"{hours} hours, {minutes} minutes"
+    
+
+
+class MessagePrompt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message_text = models.CharField(max_length=255)

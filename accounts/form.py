@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from .models import CategoryKeyword, RejectedKeyword
+from .models import MessagePrompt
 # User Registration Form
 class RegisterForm(UserCreationForm):
     email = forms.EmailField()
@@ -60,3 +61,10 @@ class QuantityForm(forms.ModelForm):
     class Meta:
         model = IndiaMartAccount
         fields = ['quantity']
+
+
+
+class MessagePromptForm(forms.ModelForm):
+    class Meta:
+        model = MessagePrompt
+        fields = ['message_text']

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from django.contrib.auth.models import User
-from .models import IndiaMartAccount, CategoryKeyword, RejectedKeyword
+from .models import IndiaMartAccount, CategoryKeyword, RejectedKeyword,MessagePrompt
 from Scraper.runnew import run_selenium_script  # Assuming your Selenium function is here
 
 # Configure logging
@@ -47,7 +47,7 @@ def start_selenium_at_scheduled_time(user_id, start_time, end_time, days,stop_ev
                 # Fetch category keywords and rejected keywords for the user
                 category_keywords = list(CategoryKeyword.objects.filter(user=user).values_list('keyword', flat=True))
                 rejected_keywords = list(RejectedKeyword.objects.filter(user=user).values_list('keyword', flat=True))
-
+                message_prompts = list(MessagePrompt.objects.filter(user=user).values_list('message_text', flat=True))
                 quantity = indiamart_account.quantity if indiamart_account else 0
                 
                 # Log the keywords and other details
@@ -63,7 +63,8 @@ def start_selenium_at_scheduled_time(user_id, start_time, end_time, days,stop_ev
                     category_keywords, 
                     rejected_keywords, 
                     quantity,
-                    stop_event=stop_event  # Assuming you may use a stop event if needed
+                    stop_event,  # Assuming you may use a stop event if needed
+                    message_prompts
                 )
                 logging.info(f"Selenium script completed for user {user.username}.")
 

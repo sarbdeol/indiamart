@@ -358,7 +358,40 @@
                     </form>
                 </div>
             </div>
-
+            <div class="form-section">
+                <div class="card" style="flex: 1;">
+                    <h5>Message Prompts</h5>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Message Prompt</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prompt in message_prompts %}
+                            <tr>
+                                <td>{{ prompt.message_text }}</td>
+                                <td>
+                                    <a href="{% url 'delete_message_prompt' prompt.id %}" class="btn btn-danger">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+            
+                    <form method="POST" id="messagePromptForm">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ message_prompt_form.message_text.label_tag }}
+                            {{ message_prompt_form.message_text }}
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Message Prompt</button>
+                        <input type="hidden" name="add_message_prompt" value="true">
+                    </form>
+                </div>
+            </div>
+            
             <!-- Logs Section -->
             <div class="card logs-container">
                 <h4>Execution Logs</h4>

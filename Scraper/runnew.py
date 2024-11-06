@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import sys
 import time  # Import the time module for sleep functionality
 import subprocess
@@ -63,7 +64,26 @@ def extract_first_h2(driver,keywordsrejectheading):
     except Exception as e:
         print("1")  # In case of an error
         return 1  # Return 1 on error
+def goto_lead(driver,message_prompts):
+    # lead=driver.find_element(By.XPATH,'//span[@id="messageCount"]')
+    # lead.click()
+    import random
+    prompt = random.choice(message_prompts)
+    driver.get('https://seller.indiamart.com/messagecentre/')
+    time.sleep(4)
 
+    first_lead=driver.find_element(By.XPATH,'//*[@id="splitViewContactList"]/div/div/div/div[1]/div/div[1]/div[1]')
+    first_lead.click()
+    time.sleep(2)
+    cross=driver.find_element(By.XPATH,'/html/body/div[7]/div/div[1]/a')
+    cross.click()
+    time.sleep(2)
+    texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]')
+    texttype.send_keys(prompt)
+    time.sleep(2)
+    texttype.send_keys(Keys.ENTER)
+    return 1
+    
 # Function to check the first <p><strong> element that contains 'mins ago'
 def check_time_and_execute(driver):
     try:
@@ -102,7 +122,7 @@ from accounts.log_store import user_logs
 # Main Selenium function to execute the script
 india_click=False
 click_result=1
-def run_selenium_script(port_number, username, category_keywords, rejected_keywords, quantity,stop_event):
+def run_selenium_script(port_number, username, category_keywords, rejected_keywords, quantity,stop_event,message_prompts):
     global india_click,click_result
     url = "https://seller.indiamart.com/bltxn/?pref=recent"
     if stop_event is None:
@@ -123,11 +143,12 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
 
     # Rest of your selenium logic, calling log_message at key steps
     log_message("Process started...")
+    print(message_prompts)
     # Function to refresh the page
     def refresh_page(url):
         options = webdriver.ChromeOptions()
         options.add_experimental_option("debuggerAddress", f"localhost:{port_number}")
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         driver = webdriver.Edge(options=options)
         try:
@@ -174,8 +195,8 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
             "--headless"  # Run in headless mode for servers without a display
         ]
 
-        subprocess.Popen(chrome_command)
-        # Main loop
+    #     subprocess.Popen(chrome_command)
+    #     # Main loop
     open_chrome(port_number)
 
     while success_counter > max_counter:
@@ -240,6 +261,10 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                 log_message("Contact Clicked")
                                 print(f"Successful run count: {success_counter}/{max_counter}")
                                 # log_message(f"Successful run {success_counter}/{max_counter}")
+
+                                message_sent=goto_lead(driver,message_prompts)
+                                if message_sent ==1:
+                                    log_message("message sent sucessfully")
                             else:
                                 failure_counter += 1
                                 print(f"Unsuccessful run count: {failure_counter}")
