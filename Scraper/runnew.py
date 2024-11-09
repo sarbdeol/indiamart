@@ -10,6 +10,15 @@ from django.contrib.auth.models import User
 from accounts.models import Notification  # Import the Notification model
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import os
+import django
+
+# Set up Django environment
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings")  # Replace with your actual project settings module
+django.setup()
+
+from accounts.models import IndiaMartAccount, IndiaMartLead  # Import the models
+from django.contrib.auth.models import User
 # Initialize success and failure counters
 success_counter = 0
 failure_counter = 0
@@ -192,10 +201,10 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
             f"--user-data-dir={user_data_dir}",
             "--no-sandbox",  # Use --no-sandbox if you're running as root
             "--disable-gpu",  # Disable GPU usage (often useful on servers)
-            "--headless"  # Run in headless mode for servers without a display
+            # "--headless"  # Run in headless mode for servers without a display
         ]
 
-    #     subprocess.Popen(chrome_command)
+        subprocess.Popen(chrome_command)
     #     # Main loop
     open_chrome(port_number)
 
@@ -265,6 +274,33 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                 message_sent=goto_lead(driver,message_prompts)
                                 if message_sent ==1:
                                     log_message("message sent sucessfully")
+
+                                    driver.find_element(By.XPATH, "//div[text()='View More']").click()
+                                    time.sleep(3)
+                                    try:
+                                        product_text = driver.find_element(By.XPATH,'//*[@id="root"]/div[6]/div/div/section/div/div/aside/div[3]/div[1]/li/span[2]').text
+                                            
+                                        phone_number_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[1]/span').text
+                                        name_text = driver.find_element(By.XPATH, '//*[@id="left-name"]').text
+                                        email_text = ''
+                                        location_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[2]/span').text
+
+                                        user = User.objects.get(username=username)
+                                        account = IndiaMartAccount.objects.get(user=user)
+                                        lead = IndiaMartLead(
+                                            account=account,
+                                            product=product_text,
+                                            phone_number=phone_number_text,
+                                            name=name_text,
+                                            email=email_text,
+                                            location=location_text
+                                        )
+                                        lead.save()  # Save the lead to the database
+
+
+                                    except:
+                                        print('error in saving lead')
+                                        pass
                             else:
                                 failure_counter += 1
                                 print(f"Unsuccessful run count: {failure_counter}")

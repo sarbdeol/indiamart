@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 
 from django.views.decorators.csrf import csrf_exempt
 from .form import IndiaMartAccountForm,EditProfileForm
-from .models import CategoryKeyword, RejectedKeyword,Notification
+from .models import CategoryKeyword, RejectedKeyword,Notification,IndiaMartLead
 from .form import CategoryKeywordForm, RejectedKeywordForm,QuantityForm
 from .models import IndiaMartAccount
 
@@ -102,30 +102,24 @@ def fetch_logs(request):
     return JsonResponse({'logs': logs})
 @login_required
 def dashboard_view(request):
-    schedules = ScheduleSettings.objects.filter(user=request.user)
-    
-    # Fetch the associated Celery PeriodicTasks
 
-    # logs = user_logs.get(request.user.username, [])  # Fetch logs for the current user
 
     # Fetch the user's IndiaMartAccount
     try:
         indiamart_account = IndiaMartAccount.objects.get(user=request.user)
+        leads = IndiaMartLead.objects.filter(account=indiamart_account)
     except IndiaMartAccount.DoesNotExist:
         indiamart_account = None
+        leads = None
     # logs = user_logs.get(request.user.username, [])
-    notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
-    category_form = CategoryKeywordForm()
-    rejected_form = RejectedKeywordForm()
-    quantity_form = QuantityForm(instance=indiamart_account)
-    message_prompts = MessagePrompt.objects.filter(user=request.user)
-    message_prompt_form = MessagePromptForm()
+    
 
     
     # Handle forms for adding new keywords
     if request.method == 'POST':
         print(request.POST)
         if 'start_selenium' in request.POST:
+            request.session['selenium_status'] = "running"
             # Fetch the port_number and keywords
             port_number = request.user.profile.port_number
             category_keywords = list(CategoryKeyword.objects.filter(user=request.user).values_list('keyword', flat=True))
@@ -148,6 +142,7 @@ def dashboard_view(request):
 
         if 'stop_selenium' in request.POST:
             # Stop the Selenium script by setting the stop event
+            request.session['selenium_status'] = "stopped"
             if request.user.username in stop_events:
                 stop_event = stop_events[request.user.username]
                 stop_event.set()  # Signal the thread to stop
@@ -157,6 +152,80 @@ def dashboard_view(request):
                 # logs.append(f"Automation process stopped for {request.user.username}")
                 return redirect('dashboard')
 
+        
+
+        
+    else:
+        category_form = CategoryKeywordForm()
+        rejected_form = RejectedKeywordForm()
+        quantity_form = QuantityForm(instance=indiamart_account)
+        message_prompt_form=MessagePromptForm()
+    context = {
+       
+        'leads':leads,
+        
+        'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
+    }
+
+    return render(request, 'dashboard.html', context)
+@login_required
+def delete_category_keyword(request, keyword_id):
+    keyword = CategoryKeyword.objects.get(id=keyword_id, user=request.user)
+    if keyword:
+        keyword.delete()
+    return redirect('dashboard')
+
+@login_required
+def delete_rejected_keyword(request, keyword_id):
+    keyword = RejectedKeyword.objects.get(id=keyword_id, user=request.user)
+    if keyword:
+        keyword.delete()
+    return redirect('dashboard')
+
+@login_required
+def setting_view(request):
+    try:
+        indiamart_account = IndiaMartAccount.objects.get(user=request.user)
+    except IndiaMartAccount.DoesNotExist:
+        indiamart_account = None
+    schedules = ScheduleSettings.objects.filter(user=request.user)
+    notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
+    category_form = CategoryKeywordForm()
+    rejected_form = RejectedKeywordForm()
+    quantity_form = QuantityForm(instance=indiamart_account)
+    message_prompts = MessagePrompt.objects.filter(user=request.user)
+    message_prompt_form = MessagePromptForm()
+    try:
+        indiamart_account = IndiaMartAccount.objects.get(user=request.user)
+    except IndiaMartAccount.DoesNotExist:
+        indiamart_account = None
+
+    if request.method == 'POST':
+        if indiamart_account:
+            form = IndiaMartAccountForm(request.POST, instance=indiamart_account)
+        else:
+            form = IndiaMartAccountForm(request.POST)
+        
+        if form.is_valid():
+            # Temporarily create the instance but do not save to the database yet
+            indiamart_account = form.save(commit=False)
+            indiamart_account.user = request.user
+
+            username = indiamart_account.indiamart_username
+            password = indiamart_account.indiamart_password
+            port_number = request.user.profile.port_number  # Get user's port number
+            print((username, password, port_number))
+            
+            # Attempt to log in to IndiaMart
+            login_successful = login_to_indiamart(username, password, port_number)
+            print('start')
+            
+            # Save only if login is successful
+            if login_successful:
+                indiamart_account.save()
+                return redirect('setting')
+            else:
+                return redirect('contact')
         if 'save_quantity' in request.POST:
             quantity_form = QuantityForm(request.POST, instance=indiamart_account)
             if quantity_form.is_valid():
@@ -189,81 +258,33 @@ def dashboard_view(request):
                 messages.error(request, "Failed to add message prompt.")
 
         
-    else:
-        category_form = CategoryKeywordForm()
-        rejected_form = RejectedKeywordForm()
-        quantity_form = QuantityForm(instance=indiamart_account)
-        message_prompt_form=MessagePromptForm()
-    context = {
-        'schedules': schedules,
-        'notifications':notifications,
-        'quantity_form': quantity_form,
-        'category_keywords': CategoryKeyword.objects.filter(user=request.user),
-        'rejected_keywords': RejectedKeyword.objects.filter(user=request.user),
-        'category_form': category_form,
-        'rejected_form': rejected_form,
-        # 'logs': logs,
-        'message_prompts': message_prompts,
-        'message_prompt_form': message_prompt_form,
-        'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
-    }
-
-    return render(request, 'dashboard.html', context)
-@login_required
-def delete_category_keyword(request, keyword_id):
-    keyword = CategoryKeyword.objects.get(id=keyword_id, user=request.user)
-    if keyword:
-        keyword.delete()
-    return redirect('dashboard')
-
-@login_required
-def delete_rejected_keyword(request, keyword_id):
-    keyword = RejectedKeyword.objects.get(id=keyword_id, user=request.user)
-    if keyword:
-        keyword.delete()
-    return redirect('dashboard')
-
-@login_required
-def setting_view(request):
-    try:
-        indiamart_account = IndiaMartAccount.objects.get(user=request.user)
-    except IndiaMartAccount.DoesNotExist:
-        indiamart_account = None
-
-    if request.method == 'POST':
-        if indiamart_account:
-            form = IndiaMartAccountForm(request.POST, instance=indiamart_account)
         else:
-            form = IndiaMartAccountForm(request.POST)
+            category_form = CategoryKeywordForm()
+            rejected_form = RejectedKeywordForm()
+            quantity_form = QuantityForm(instance=indiamart_account)
+            message_prompt_form=MessagePromptForm()
         
-        if form.is_valid():
-            # Temporarily create the instance but do not save to the database yet
-            indiamart_account = form.save(commit=False)
-            indiamart_account.user = request.user
 
-            username = indiamart_account.indiamart_username
-            password = indiamart_account.indiamart_password
-            port_number = request.user.profile.port_number  # Get user's port number
-            print((username, password, port_number))
-            
-            # Attempt to log in to IndiaMart
-            login_successful = login_to_indiamart(username, password, port_number)
-            print('start')
-            
-            # Save only if login is successful
-            if login_successful:
-                indiamart_account.save()
-                return redirect('setting')
-            else:
-                return redirect('contact')
 
     else:
         form = IndiaMartAccountForm(instance=indiamart_account)
 
+
     context = {
-        'form': form,
-        'indiamart_account': indiamart_account,
-    }
+            'form': form,
+            'indiamart_account': indiamart_account,
+            'schedules': schedules,
+            'notifications':notifications,
+            'quantity_form': quantity_form,
+            'category_keywords': CategoryKeyword.objects.filter(user=request.user),
+            'rejected_keywords': RejectedKeyword.objects.filter(user=request.user),
+            'category_form': category_form,
+            'rejected_form': rejected_form,
+            # 'logs': logs,
+            'message_prompts': message_prompts,
+            'message_prompt_form': message_prompt_form,
+            'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
+        }
     return render(request, 'setting.html', context)
 
 def contact(request):

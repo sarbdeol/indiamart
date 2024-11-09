@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Profile, IndiaMartAccount, Subscription, CategoryKeyword, RejectedKeyword, Notification
+from .models import Profile, IndiaMartAccount, Subscription, CategoryKeyword, RejectedKeyword, Notification, IndiaMartLead
 
 # Register Profile model
 @admin.register(Profile)
@@ -78,3 +78,9 @@ class ScheduleSettingsAdmin(admin.ModelAdmin):
                 self.message_user(request, f"Stopped Selenium task for {schedule.user.username}.", level=messages.SUCCESS)
 
     stop_selenium_task.short_description = "Stop selected Selenium tasks"
+
+
+@admin.register(IndiaMartLead)
+class IndiaMartLeadAdmin(admin.ModelAdmin):
+    list_display = ('account', 'product', 'name', 'phone_number', 'email', 'location')
+    search_fields = ('name', 'product', 'location')

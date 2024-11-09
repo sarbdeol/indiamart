@@ -156,3 +156,16 @@ class ScheduleSettings(models.Model):
 class MessagePrompt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message_text = models.CharField(max_length=255)
+
+
+
+class IndiaMartLead(models.Model):
+    account = models.ForeignKey(IndiaMartAccount, on_delete=models.CASCADE, related_name="leads")
+    product = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20)
+    name = models.CharField(max_length=255)
+    email = models.EmailField(max_length=255)
+    location = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"Lead for {self.name} - {self.product}"

@@ -26,7 +26,7 @@ def open_chrome(port_number):
         f"--user-data-dir={user_data_dir}",
         "--no-sandbox",  # Use --no-sandbox if you're running as root
         "--disable-gpu",  # Disable GPU usage (often useful on servers)
-        "--headless"  # Run in headless mode for servers without a display
+        # "--headless"  # Run in headless mode for servers without a display
     ]
 
     subprocess.Popen(chrome_command)
@@ -39,7 +39,7 @@ def login_to_indiamart(username, password, port_number):
         chrome_options = Options()
         chrome_options.add_argument("--start-maximized")
         chrome_options.add_argument("--disable-notifications")
-        chrome_options.add_argument('--headless')
+        # chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_experimental_option("debuggerAddress", f"localhost:{port_number}")
 

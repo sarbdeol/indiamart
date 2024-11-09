@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+  
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
             background-color: #f7f8fa;
@@ -86,11 +88,12 @@
         .btn-primary {
             background-color: #6c5ce7;
             color: white;
-            width: 100%;
+            width: auto;
             height: 45px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             border: none;
+            margin: 5px;
             border-radius: 8px;
             transition: background-color 0.3s ease;
             box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
@@ -144,26 +147,303 @@
                     {% endif %}
                 </div>
             </div>
+            
+            <div class="container">
+                <div class="card">
+
+                
+                    <h2>Settings</h2>
+                
+                    <div class="form-section">
+                        <div class="card" style="flex: 1;">
+                            <h5>Category Accept Keywords</h5>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for keyword in category_keywords %}
+                                    <tr>
+                                        <td>{{ keyword.keyword }}</td>
+                                        <td>
+                                            <a href="{% url 'delete_category_keyword' keyword.id %}" class="btn btn-danger">Delete</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <form method="POST" id="categoryKeywordForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {{ category_form.keyword.label_tag }} 
+                                    {{ category_form.keyword }}  <!-- This generates the input for the keyword -->
+                                </div>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('add_category_keyword')">Add Keyword</button>
+                                <input type="hidden" name="add_category_keyword" value="true"> <!-- Hidden input to signify the action -->
+                            </form>
+                            <!-- <form method="POST">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {{ category_form.keyword.label_tag }} {{ category_form.keyword }}
+                                </div>
+                                <div class="form-group">
+                                    {{ category_form.category.label_tag }} {{ category_form.category }}
+                                </div>
+                                <button type="submit" name="add_category_keyword" class="btn btn-primary">Add Keyword</button>
+                            </form> -->
+                        </div>
+                
+                        <div class="card" style="flex: 1;">
+                            <h5>Schedule Settings</h5>
+                            <form method="POST" action="{% url 'schedule_start_function' %}">
+                                {% csrf_token %}
+                                
+                                <!-- Option to run 24/7 -->
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="run_24_7" name="run_24_7">
+                                    <label class="form-check-label" for="run_24_7">Run 24/7</label>
+                                </div>
+                        
+                                <!-- Time Range -->
+                                <div class="form-group">
+                                    <label for="time_range">Time Range:</label>
+                                    <input type="time" id="start_time" name="start_time" class="form-control" required>
+                                    to
+                                    <input type="time" id="end_time" name="end_time" class="form-control" required>
+                                </div>
+                        
+                                <!-- Days of the Week -->
+                                <div class="form-group">
+                                    <label for="days_of_week">Days of the Week:</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="monday" name="days[]" value="monday"
+                                        {% if schedule and 'monday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="monday">Monday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="tuesday" name="days[]" value="tuesday"
+                                        {% if schedule and 'tuesday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="tuesday">Tuesday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="wednesday" name="days[]" value="wednesday"
+                                            {% if schedule and 'wednesday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="wednesday">Wednesday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="thursday" name="days[]" value="thursday" 
+                                            {% if schedule and 'thursday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="thursday">Thursday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="friday" name="days[]" value="friday" 
+                                            {% if schedule and 'friday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="friday">Friday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="saturday" name="days[]" value="saturday" 
+                                            {% if schedule and 'saturday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="saturday">Saturday</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="sunday" name="days[]" value="sunday" 
+                                            {% if schedule and 'sunday' in schedule.days_of_week %}checked{% endif %}>
+                                        <label class="form-check-label" for="sunday">Sunday</label>
+                                    </div>
+                                    <!-- Add checkboxes for all other days -->
+                                </div>
+                        
+                                <button class="btn btn-primary" type="submit">Schedule</button>
+                            </form>
+                        </div>
+                    </div>
+                
+                    <!-- Scheduled Tasks Section -->
+                    <div class="card mt-4">
+                        <h5>Scheduled Tasks</h5>
+                        {% if schedules %}
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Run 24/7</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Days</th>
+                                        <th>Status</th>
+                                        <th>Time left</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for schedule in schedules %}
+                                        <tr>
+                                            <td>{{ schedule.run_24_7 }}</td>
+                                            <td>{{ schedule.start_time }}</td>
+                                            <td>{{ schedule.end_time }}</td>
+                                            <td>{{ schedule.days_of_week }}</td>
+                                            <td>{{ schedule.status }}</td>
+                                            <td>{{schedule.time_left}}</td>
+                                            <td>
+                                                <a href="{% url 'delete_schedule' schedule.id %}" class="btn btn-danger">Delete</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>No schedules found.</p>
+                        {% endif %}
+                    </div>
+                        
+                    
+                
+                    <!-- Reject Keywords and Quantity Section -->
+                    <div class="form-section">
+                        <div class="card" style="flex: 1;">
+                            <h5>Reject Keywords (Headings)</h5>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for keyword in rejected_keywords %}
+                                    <tr>
+                                        <td>{{ keyword.keyword }}</td>
+                                        <td>
+                                            <a href="{% url 'delete_rejected_keyword' keyword.id %}" class="btn btn-danger">Delete</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <form method="POST" id="rejectedKeywordForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {{ rejected_form.keyword.label_tag }} 
+                                    {{ rejected_form.keyword }}  <!-- This generates the input for the keyword -->
+                                </div>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('add_rejected_keyword')">Add Keyword</button>
+                                <input type="hidden" name="add_rejected_keyword" value="true"> <!-- Hidden input to signify the action -->
+                            </form>
+                        </div>
+                
+                        <div class="card" style="flex: 1;">
+                            <h5>Quantity</h5>
+                            <form method="POST" id="quantityForm" class="form-section">
+                                {% csrf_token %}
+                                {{ quantity_form.quantity.label_tag }} 
+                                {{ quantity_form.quantity }}  <!-- Display the quantity input field -->
+                                <button type="button" name="save_quantity" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passwordModal" onclick="setFormAction('save_quantity')">Edit Apply and Save</button>
+                                <input type="hidden" name="save_quantity" value="true">
+                            </form>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <div class="card" style="flex: 1;">
+                            <h5>Message Prompts</h5>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Message Prompt</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prompt in message_prompts %}
+                                    <tr>
+                                        <td>{{ prompt.message_text }}</td>
+                                        <td>
+                                            <a href="{% url 'delete_message_prompt' prompt.id %}" class="btn btn-danger">Delete</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                    
+                            <form method="POST" id="messagePromptForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    {{ message_prompt_form.message_text.label_tag }}
+                                    {{ message_prompt_form.message_text }}
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add Message Prompt</button>
+                                <input type="hidden" name="add_message_prompt" value="true">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="container mt-5">
-        <h2>Connect Your IndiaMart Account</h2>
-        <p>Enter your IndiaMart credentials to connect your account:</p>
-
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-
-            <button type="submit" class="btn btn-primary">Connect</button>
-        </form>
-
-        {% if indiamart_account %}
-            <div class="alert alert-success mt-4" role="alert">
-                You have successfully connected your IndiaMart account!
+    <div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordModalLabel">Enter Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="text-danger" id="passwordError" style="display:none;"></div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
             </div>
-        {% endif %}
+        </div>
     </div>
-
+        <!-- Keyword and Category Sections -->
+    <script>
+        function setFormAction(action) {
+            // Store the action in a hidden input field or use a variable
+            document.getElementById('passwordForm').dataset.action = action;
+        }
+    
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();  // Prevent the default form submission
+    
+            const password = document.getElementById('password').value;
+    
+            // Make an AJAX request to check the password
+            fetch('{% url "check_password" %}', {  // Replace with your URL for password verification
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'  // Include CSRF token for Django
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // If password is correct, submit the form
+                    const action = e.target.dataset.action;
+    
+                    // Redirect to the form action based on the button clicked
+                    if (action === 'add_rejected_keyword') {
+                        document.getElementById('rejectedKeywordForm').submit();
+                    } else if (action === 'save_quantity') {
+                        document.getElementById('quantityForm').submit();
+                    } else if (action === 'add_category_keyword') {
+                        document.getElementById('categoryKeywordForm').submit();
+                    }
+                } else {
+                    // Show error message
+                    document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
+                    document.getElementById('passwordError').style.display = 'block';
+                }
+            });
+        });
+    </script>
+        
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     
