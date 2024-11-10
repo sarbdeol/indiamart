@@ -173,14 +173,14 @@ def delete_category_keyword(request, keyword_id):
     keyword = CategoryKeyword.objects.get(id=keyword_id, user=request.user)
     if keyword:
         keyword.delete()
-    return redirect('dashboard')
+    return redirect('setting')
 
 @login_required
 def delete_rejected_keyword(request, keyword_id):
     keyword = RejectedKeyword.objects.get(id=keyword_id, user=request.user)
     if keyword:
         keyword.delete()
-    return redirect('dashboard')
+    return redirect('setting')
 
 @login_required
 def setting_view(request):
@@ -230,21 +230,21 @@ def setting_view(request):
             quantity_form = QuantityForm(request.POST, instance=indiamart_account)
             if quantity_form.is_valid():
                 quantity_form.save()
-                return redirect('dashboard')
+                return redirect('setting')
         if 'add_category_keyword' in request.POST:
             category_form = CategoryKeywordForm(request.POST)
             if category_form.is_valid():
                 new_keyword = category_form.save(commit=False)
                 new_keyword.user = request.user
                 new_keyword.save()
-                return redirect('dashboard')
+                return redirect('setting')
         if 'add_rejected_keyword' in request.POST:
             rejected_form = RejectedKeywordForm(request.POST)
             if rejected_form.is_valid():
                 new_reject_keyword = rejected_form.save(commit=False)
                 new_reject_keyword.user = request.user
                 new_reject_keyword.save()
-                return redirect('dashboard')
+                return redirect('setting')
         if 'add_message_prompt' in request.POST:
             form = MessagePromptForm(request.POST)
             if form.is_valid():
@@ -253,7 +253,7 @@ def setting_view(request):
                 new_form.save()
                 form.save()
                 messages.success(request, "Message prompt added successfully.")
-                return redirect('dashboard')
+                return redirect('setting')
             else:
                 messages.error(request, "Failed to add message prompt.")
 
@@ -393,7 +393,7 @@ def delete_schedule(request, schedule_id):
     """Delete a schedule"""
     schedule = get_object_or_404(ScheduleSettings, id=schedule_id, user=request.user)
     schedule.delete()
-    return redirect('dashboard')
+    return redirect('setting')
 
 @login_required
 def schedule_start_function(request):
@@ -413,7 +413,7 @@ def schedule_start_function(request):
         schedule.days_of_week = days_of_week
         schedule.save()
 
-        return redirect('dashboard')  # Redirect to the dashboard after saving
+        return redirect('setting')  # Redirect to the dashboard after saving
 
     # If GET request, render the schedule form
     schedule = ScheduleSettings.objects.filter(user=request.user).first()  # Fetch existing schedule if any
@@ -427,4 +427,4 @@ def delete_message_prompt(request, prompt_id):
     prompt = get_object_or_404(MessagePrompt, id=prompt_id)
     prompt.delete()
     messages.success(request, "Message prompt deleted successfully.")
-    return redirect('dashboard')
+    return redirect('setting')
