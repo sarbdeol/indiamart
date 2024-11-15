@@ -84,13 +84,17 @@ def goto_lead(driver,message_prompts):
     first_lead=driver.find_element(By.XPATH,'//*[@id="splitViewContactList"]/div/div/div/div[1]/div/div[1]/div[1]')
     first_lead.click()
     time.sleep(2)
-    cross=driver.find_element(By.XPATH,'/html/body/div[7]/div/div[1]/a')
-    cross.click()
-    time.sleep(2)
-    texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]')
+    try:
+        cross=driver.find_element(By.XPATH,'/html/body/div[7]/div/div[1]/a')
+        cross.click()
+        time.sleep(2)
+    except:
+        pass
+    texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]/div')
     texttype.send_keys(prompt)
     time.sleep(2)
-    texttype.send_keys(Keys.ENTER)
+    driver.find_element(By.XPATH,'//div[@id="send-reply-span"]').click()
+    time.sleep(2)
     return 1
     
 # Function to check the first <p><strong> element that contains 'mins ago'
@@ -238,6 +242,7 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                 
                 if refresh_result_2:
                     time.sleep(3)
+                    message_sent=goto_lead(driver,message_prompts)
                     span_result = check_span_for_keywords(driver,category_keywords)
                     
                     if span_result == 0:
@@ -262,11 +267,12 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                     span_text = span_element.text
                                     print(span_text)  # Output the text of the span element
                                 except :
+                                    span_text=''
                                     print("green Element not found within the time limit.")
-                                log_message(f"Title : {span_text}")
-                                h2_element = driver.find_element(By.TAG_NAME, "h2")
-                                h2_text = h2_element.text
-                                log_message(f"Heading : {h2_text}")
+                                # log_message(f"Title : {span_text}")
+                                # h2_element = driver.find_element(By.TAG_NAME, "h2")
+                                # h2_text = h2_element.text
+                                # log_message(f"Heading : {h2_text}")
                                 log_message("Contact Clicked")
                                 print(f"Successful run count: {success_counter}/{max_counter}")
                                 # log_message(f"Successful run {success_counter}/{max_counter}")
@@ -280,20 +286,32 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                     try:
                                         product_text = driver.find_element(By.XPATH,'//*[@id="root"]/div[6]/div/div/section/div/div/aside/div[3]/div[1]/li/span[2]').text
                                             
-                                        phone_number_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[1]/span').text
+                                        # phone_number_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[2]/span').text
                                         name_text = driver.find_element(By.XPATH, '//*[@id="left-name"]').text
-                                        email_text = ''
-                                        location_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[2]/span').text
+                                        # email_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[3]/span').text
+                                        # location_text = driver.find_element(By.XPATH, '//*[@id="contactHeader"]/div[2]/span[4]/span').text
 
+                                        spans=driver.find_elements(By.XPATH,'//*[@id="contactHeader"]/div[2]/span/span')
+                                        # Initialize variables for storing contact information
+                                        email, phone, location = None, None, None
+
+                                        for span in spans:
+                                            text = span.text
+                                            if '@' in text:  # Check if it's an email
+                                                email = text
+                                            elif any(char.isdigit() for char in text):  # Check if it's a phone number
+                                                phone = text
+                                            elif ',' in text:  # Check if it's a location
+                                                location = text
                                         user = User.objects.get(username=username)
                                         account = IndiaMartAccount.objects.get(user=user)
                                         lead = IndiaMartLead(
                                             account=account,
                                             product=product_text,
-                                            phone_number=phone_number_text,
+                                            phone_number=phone,
                                             name=name_text,
-                                            email=email_text,
-                                            location=location_text
+                                            email=email,
+                                            location=location
                                         )
                                         lead.save()  # Save the lead to the database
 

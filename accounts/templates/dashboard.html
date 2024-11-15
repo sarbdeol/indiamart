@@ -12,7 +12,7 @@
 
     <style>
         body {
-            background-color: #f7f8fa;
+            background-color: #608BC1;
             font-family: Arial, sans-serif;
         }
 
@@ -55,10 +55,10 @@
         }
 
         .header-bar {
-            background-color: #98df8a;
+            background-color: #F3F3E0;
             padding: 15px;
             border-radius: 5px;
-            color: white;
+            color: black;
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 30px;
@@ -88,9 +88,15 @@
             border: none;
             width: 140px;
         }
+        .content {
+            padding: 20px;
+            width: 100%;
+            background-color: #F3F3E0;
 
+        }
         .btn-start {
-            background-color: #28a745;
+            background-color: #F3F3E0;
+            color: #000;
         }
 
         .btn-stop {
@@ -98,7 +104,8 @@
         }
 
         .btn-settings {
-            background-color: #28a745;
+            background-color: #F3F3E0;
+            color: #000;
         }
 
         .btn-report {
@@ -125,8 +132,8 @@
         }
 
         .footer-btn {
-            background-color: #98df8a;
-            color: white;
+            background-color: #F3F3E0;
+            color: rgb(0, 0, 0);
             font-size: 18px;
             text-align: center;
             padding: 15px;
@@ -251,48 +258,49 @@
                         <button class="btn-custom btn-report">Get Report</button>
                     </div>
                 </div>
+                <div class="content">
+                    <!-- Recent Purchased Leads Title -->
+                    <h3 class="mb-4">RECENT PURCHASED LEADS</h3>
 
-                <!-- Recent Purchased Leads Title -->
-                <h3 class="mb-4">RECENT PURCHASED LEADS</h3>
-
-                <!-- Leads Table -->
-                <div class="leads-table">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Sl. No</th>
-                                <th>Product</th>
-                                <th>Phone Number</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Location</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if leads %}
-                                {% for lead in leads %}
-                                    <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ lead.product }}</td>
-                                        <td>{{ lead.phone_number }}</td>
-                                        <td>{{ lead.name }}</td>
-                                        <td>{{ lead.email }}</td>
-                                        <td>{{ lead.location }}</td>
-                                    </tr>
-                                {% endfor %}
-                            {% else %}
+                    <!-- Leads Table -->
+                    <div class="leads-table">
+                        <table class="table table-hover">
+                            <thead>
                                 <tr>
-                                    <td colspan="6">No leads available.</td>
+                                    <th>Sl. No</th>
+                                    <th>Product</th>
+                                    <th>Phone Number</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Location</th>
                                 </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {% if leads %}
+                                    {% for lead in leads %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ lead.product }}</td>
+                                            <td>{{ lead.phone_number }}</td>
+                                            <td>{{ lead.name }}</td>
+                                            <td>{{ lead.email }}</td>
+                                            <td>{{ lead.location }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6">No leads available.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
 
-                <!-- CRM Button -->
-                <a href="#" class="footer-btn mt-4">
-                    Go to Customer Relationship Management
-                </a>
+                    <!-- CRM Button -->
+                    <a href="#" class="footer-btn mt-4">
+                        Go to Customer Relationship Management
+                    </a>
+                </div>
             </main>
         </div>
     </div>
