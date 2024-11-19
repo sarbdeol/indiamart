@@ -498,6 +498,20 @@
                             <input type="hidden" name="add_message_prompt" value="true">
                         </form>
                     </div>
+
+                    <div class="card-custom">
+                        <h2>Review Settings</h2>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="askForReview" name="ask_for_review" 
+                                       {% if review_check.ask_for_review %}checked{% endif %}>
+                                <label class="form-check-label" for="askForReview">Ask for Review</label>
+                            </div>
+                            <button type="submit" name="review" class="btn btn-primary-custom mt-3">Save</button>
+                        </form>
+                    </div>
+                    
                 </div>
             </main>
         </div>

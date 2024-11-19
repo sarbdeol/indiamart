@@ -169,3 +169,11 @@ class IndiaMartLead(models.Model):
 
     def __str__(self):
         return f"Lead for {self.name} - {self.product}"
+    
+
+class ReviewCheck(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Reference to the user who requested the review
+    ask_for_review = models.BooleanField(default=False)  # Checkbox status for "Ask for Review"
+
+    def __str__(self):
+        return f"Review request by {self.user.username} - {'Requested' if self.ask_for_review else 'Not Requested'}"

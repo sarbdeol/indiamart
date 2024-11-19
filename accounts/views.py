@@ -182,12 +182,28 @@ def delete_rejected_keyword(request, keyword_id):
         keyword.delete()
     return redirect('setting')
 
+
+from .models import ReviewCheck
+
+def update_review_check(request):
+    # Retrieve or create the ReviewCheck instance for the logged-in user
+    review_check, created = ReviewCheck.objects.get_or_create(user=request.user)
+
+    # Update the ask_for_review field based on form data
+    review_check.ask_for_review = request.POST.get('ask_for_review') == 'on'
+    review_check.save()
+
+    return redirect('some_view')  # Adjust the redirect as needed
 @login_required
 def setting_view(request):
     try:
         indiamart_account = IndiaMartAccount.objects.get(user=request.user)
     except IndiaMartAccount.DoesNotExist:
         indiamart_account = None
+
+    # Retrieve or create ReviewCheck instance for the user
+    review_check, created = ReviewCheck.objects.get_or_create(user=request.user)
+
     schedules = ScheduleSettings.objects.filter(user=request.user)
     notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')
     category_form = CategoryKeywordForm()
@@ -195,10 +211,6 @@ def setting_view(request):
     quantity_form = QuantityForm(instance=indiamart_account)
     message_prompts = MessagePrompt.objects.filter(user=request.user)
     message_prompt_form = MessagePromptForm()
-    try:
-        indiamart_account = IndiaMartAccount.objects.get(user=request.user)
-    except IndiaMartAccount.DoesNotExist:
-        indiamart_account = None
 
     if request.method == 'POST':
         if indiamart_account:
@@ -207,30 +219,29 @@ def setting_view(request):
             form = IndiaMartAccountForm(request.POST)
         
         if form.is_valid():
-            # Temporarily create the instance but do not save to the database yet
             indiamart_account = form.save(commit=False)
             indiamart_account.user = request.user
 
             username = indiamart_account.indiamart_username
             password = indiamart_account.indiamart_password
-            port_number = request.user.profile.port_number  # Get user's port number
+            port_number = request.user.profile.port_number
             print((username, password, port_number))
             
-            # Attempt to log in to IndiaMart
             login_successful = login_to_indiamart(username, password, port_number)
             print('start')
             
-            # Save only if login is successful
             if login_successful:
                 indiamart_account.save()
                 return redirect('setting')
             else:
                 return redirect('contact')
+
         if 'save_quantity' in request.POST:
             quantity_form = QuantityForm(request.POST, instance=indiamart_account)
             if quantity_form.is_valid():
                 quantity_form.save()
                 return redirect('setting')
+
         if 'add_category_keyword' in request.POST:
             category_form = CategoryKeywordForm(request.POST)
             if category_form.is_valid():
@@ -238,6 +249,7 @@ def setting_view(request):
                 new_keyword.user = request.user
                 new_keyword.save()
                 return redirect('setting')
+
         if 'add_rejected_keyword' in request.POST:
             rejected_form = RejectedKeywordForm(request.POST)
             if rejected_form.is_valid():
@@ -245,46 +257,42 @@ def setting_view(request):
                 new_reject_keyword.user = request.user
                 new_reject_keyword.save()
                 return redirect('setting')
+
         if 'add_message_prompt' in request.POST:
             form = MessagePromptForm(request.POST)
             if form.is_valid():
                 new_form = form.save(commit=False)
                 new_form.user = request.user
                 new_form.save()
-                form.save()
                 messages.success(request, "Message prompt added successfully.")
                 return redirect('setting')
             else:
                 messages.error(request, "Failed to add message prompt.")
 
-        
-        else:
-            category_form = CategoryKeywordForm()
-            rejected_form = RejectedKeywordForm()
-            quantity_form = QuantityForm(instance=indiamart_account)
-            message_prompt_form=MessagePromptForm()
-        
-
+        if 'review' in request.POST:
+            # Update ask_for_review based on checkbox status
+            review_check.ask_for_review = 'ask_for_review' in request.POST
+            review_check.save()
+            messages.success(request, "Review setting updated successfully.")
+            return redirect('setting')
 
     else:
         form = IndiaMartAccountForm(instance=indiamart_account)
 
-
     context = {
-            'form': form,
-            'indiamart_account': indiamart_account,
-            'schedules': schedules,
-            'notifications':notifications,
-            'quantity_form': quantity_form,
-            'category_keywords': CategoryKeyword.objects.filter(user=request.user),
-            'rejected_keywords': RejectedKeyword.objects.filter(user=request.user),
-            'category_form': category_form,
-            'rejected_form': rejected_form,
-            # 'logs': logs,
-            'message_prompts': message_prompts,
-            'message_prompt_form': message_prompt_form,
-            'indiamart_account': indiamart_account  # Pass the IndiaMart account to the template
-        }
+        'form': form,
+        'indiamart_account': indiamart_account,
+        'schedules': schedules,
+        'notifications': notifications,
+        'quantity_form': quantity_form,
+        'category_keywords': CategoryKeyword.objects.filter(user=request.user),
+        'rejected_keywords': RejectedKeyword.objects.filter(user=request.user),
+        'category_form': category_form,
+        'rejected_form': rejected_form,
+        'message_prompts': message_prompts,
+        'message_prompt_form': message_prompt_form,
+        'review_check': review_check  # Pass the ReviewCheck instance to the template
+    }
     return render(request, 'setting.html', context)
 
 def contact(request):

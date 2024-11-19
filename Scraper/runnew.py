@@ -17,8 +17,9 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings")  # Replace with your actual project settings module
 django.setup()
 
-from accounts.models import IndiaMartAccount, IndiaMartLead  # Import the models
+from accounts.models import IndiaMartAccount, IndiaMartLead ,ReviewCheck # Import the models
 from django.contrib.auth.models import User
+
 # Initialize success and failure counters
 success_counter = 0
 failure_counter = 0
@@ -73,7 +74,7 @@ def extract_first_h2(driver,keywordsrejectheading):
     except Exception as e:
         print("1")  # In case of an error
         return 1  # Return 1 on error
-def goto_lead(driver,message_prompts):
+def goto_lead(driver,message_prompts,ask_for_review):
     # lead=driver.find_element(By.XPATH,'//span[@id="messageCount"]')
     # lead.click()
     import random
@@ -90,6 +91,12 @@ def goto_lead(driver,message_prompts):
         time.sleep(2)
     except:
         pass
+    if ask_for_review:
+        try:
+            driver.find_element(By.XPATH, "//div[text()='Ask for Review']").click()
+            time.sleep(3)
+        except Exception as e:
+            print("Ask for Review button not found:", e)
     texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]/div')
     texttype.send_keys(prompt)
     time.sleep(2)
@@ -276,8 +283,9 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                 log_message("Contact Clicked")
                                 print(f"Successful run count: {success_counter}/{max_counter}")
                                 # log_message(f"Successful run {success_counter}/{max_counter}")
-
-                                message_sent=goto_lead(driver,message_prompts)
+                                user = User.objects.get(username=username) 
+                                review_check, created = ReviewCheck.objects.get_or_create(user=user)
+                                message_sent=goto_lead(driver,message_prompts,review_check)
                                 if message_sent ==1:
                                     log_message("message sent sucessfully")
 

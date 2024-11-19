@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import Profile, IndiaMartAccount, Subscription, CategoryKeyword, RejectedKeyword, Notification, IndiaMartLead
+from .models import Profile, IndiaMartAccount, Subscription, CategoryKeyword, RejectedKeyword, Notification, IndiaMartLead,ReviewCheck
 
 # Register Profile model
 @admin.register(Profile)
@@ -84,3 +84,10 @@ class ScheduleSettingsAdmin(admin.ModelAdmin):
 class IndiaMartLeadAdmin(admin.ModelAdmin):
     list_display = ('account', 'product', 'name', 'phone_number', 'email', 'location')
     search_fields = ('name', 'product', 'location')
+
+
+
+@admin.register(ReviewCheck)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['user', 'ask_for_review']
+    search_fields = ['user__username', 'ask_for_review']
