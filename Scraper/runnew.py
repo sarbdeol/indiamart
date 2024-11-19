@@ -242,7 +242,7 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                 
                 if refresh_result_2:
                     time.sleep(3)
-                    message_sent=goto_lead(driver,message_prompts)
+                    # message_sent=goto_lead(driver,message_prompts)
                     span_result = check_span_for_keywords(driver,category_keywords)
                     
                     if span_result == 0:
@@ -299,7 +299,7 @@ def run_selenium_script(port_number, username, category_keywords, rejected_keywo
                                             text = span.text
                                             if '@' in text:  # Check if it's an email
                                                 email = text
-                                            elif any(char.isdigit() for char in text):  # Check if it's a phone number
+                                            elif (len(text) == 11 and text[0] == '0' and text.isdigit()):  # Check if it's a phone number
                                                 phone = text
                                             elif ',' in text:  # Check if it's a location
                                                 location = text
