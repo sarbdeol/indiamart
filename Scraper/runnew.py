@@ -78,7 +78,7 @@ def goto_lead(driver,message_prompts,ask_for_review):
     # lead=driver.find_element(By.XPATH,'//span[@id="messageCount"]')
     # lead.click()
     import random
-    prompt = random.choice(message_prompts)
+    # prompt = random.choice(message_prompts)
     driver.get('https://seller.indiamart.com/messagecentre/')
     time.sleep(4)
 
@@ -91,17 +91,20 @@ def goto_lead(driver,message_prompts,ask_for_review):
         time.sleep(2)
     except:
         pass
+    for prompt in message_prompts:
+        
+        
+        texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]/div')
+        texttype.send_keys(prompt)
+        time.sleep(2)
+        driver.find_element(By.XPATH,'//div[@id="send-reply-span"]').click()
+        time.sleep(2)
     if ask_for_review:
         try:
             driver.find_element(By.XPATH, "//div[text()='Ask for Review']").click()
             time.sleep(3)
         except Exception as e:
             print("Ask for Review button not found:", e)
-    texttype=driver.find_element(By.XPATH,'//*[@title="Type your Message..."]/div')
-    texttype.send_keys(prompt)
-    time.sleep(2)
-    driver.find_element(By.XPATH,'//div[@id="send-reply-span"]').click()
-    time.sleep(2)
     return 1
     
 # Function to check the first <p><strong> element that contains 'mins ago'
